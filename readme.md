@@ -57,7 +57,14 @@
 **开窗过渡**
 
 <p align="center">
-  <img src="preview/readme-animated-window.gif" width="88%" alt="动画窗口开窗 GIF" />
+  <video src="preview/readme-animated-window.mp4" controls width="88%" autoplay loop muted playsinline>
+    你的浏览器不支持 video 标签，请直接查看
+    <a href="preview/readme-animated-window.mp4">readme-animated-window.mp4</a>
+  </video>
+</p>
+
+<p align="center">
+  <a href="preview/readme-animated-window.mp4">下载 / 在新标签打开视频</a>
 </p>
 
 ### 检查器 · 窄屏
