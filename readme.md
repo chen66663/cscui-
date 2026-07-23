@@ -1,220 +1,189 @@
 # cscui
 
-cscui is an Apple-inspired Qt Quick component workbench for desktop and mobile
-applications. It provides reusable QML controls, a live component gallery,
-light and dark themes, and a runtime inspector for validating layout and
-interaction states.
+基于 Qt Quick 的桌面组件工作台：可复用控件、明暗主题、中英切换、运行时检查器，以及面向真实场景的组件演示。
 
-The visual language follows Apple's Human Interface Guidelines (HIG): clear
-hierarchy, restrained surfaces, semantic color, predictable navigation,
-keyboard support, and motion that communicates state. cscui is an independent
-project and does not distribute Apple's proprietary assets.
+仓库：https://github.com/chen66663/cscui-
 
-## Highlights
+---
 
-- Qt 6.8 or newer with a C++17 application shell.
-- Versioned QML module URI: `cscui`, version `1.0`.
-- Shared theme tokens for light mode, dark mode, high contrast, and reduced
-  motion.
-- Component gallery for controls, data views, navigation, charts, media, and
-  feedback.
-- Optional runtime inspector with viewport, frame-rate, layout-bound, and event
-  diagnostics.
-- CMake warnings, compile database generation, and a CTest QML lint entry point.
-- Scaffold templates for basic, mobile, and productivity applications.
+## 界面预览
 
-See [the design system](docs/DESIGN_SYSTEM.md) for tokens, accessibility
-rules, debug behavior, and migration notes.
+### 今日工作流（浅色）
 
-## Requirements
+表单、操作、状态标签、进度与空状态等常用控件。
 
-- Qt 6.8+ with the Quick, Multimedia, and Network modules.
-- CMake 3.24+.
-- A C++17 compiler supported by the selected Qt kit.
-- Font Awesome 6 desktop font files for the optional icon glyphs in
-  `fonts/`.
+![今日工作流](preview/readme-core-light.png)
 
-## Build and run
+### 日程与资料（深色）
 
-~~~bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build --parallel
-ctest --test-dir build --output-on-failure
-~~~
+列表、导航、日历、表格、轮播与备注等数据/内容组件。
 
-For a multi-configuration generator:
+![日程与资料](preview/readme-content-dark.png)
 
-~~~powershell
+### 生活看板（深色）
+
+图表、小组件、材质卡片、动画窗口与媒体演示。
+
+![生活看板](preview/readme-dashboard-dark.png)
+
+---
+
+## 功能概览
+
+- **三场景导航**：今日工作流 / 日程与资料 / 生活看板（`--page core|light|extended`）
+- **主题与无障碍**：浅色 / 深色 / 自动；高对比、减少动态效果
+- **中英切换**：`Theme.localized` + 界面一键切换
+- **无边框窗口**：红绿灯按钮、拖拽移动、最大化还原
+- **组件身份角标**：悬停时在组件外侧显示名称（Overlay，不挡操作）
+- **丝滑切页**：单树入场动画（透明度 + 位移 + 微缩放）；`reducedMotion` 时关闭
+- **运行时检查器**：`--debug-ui` 或 `Ctrl+Shift+D`（布局边界、事件日志、FPS 采样等）
+- **媒体（按需）**：本地音乐扫描走后台低优先级线程池，支持取消与有界缓存
+
+---
+
+## 环境要求
+
+| 项 | 版本 |
+|----|------|
+| Qt | **6.8+**（Quick、Multimedia、Network、Concurrent） |
+| CMake | **3.24+** |
+| 编译器 | C++17（MSVC / MinGW / Clang 等） |
+| 可选 | Font Awesome 6 桌面字体（仓库已含 `fonts/`） |
+
+---
+
+## 构建与运行
+
+```bash
+cmake -S . -B build -DCMAKE_PREFIX_PATH=<Qt安装路径>
 cmake --build build --config RelWithDebInfo --parallel
-ctest --test-dir build -C RelWithDebInfo --output-on-failure
-~~~
+```
 
-The generated `compile_commands.json` can be consumed by clangd, IDE
-tooling, and static-analysis jobs. The application binary is named `cscui`
-(or `cscui.exe` on Windows).
+可执行文件：`build/cscui`（Windows 为 `build/cscui.exe`）。
 
-For single-configuration generators, an unspecified build type defaults to
-`RelWithDebInfo`. This keeps runtime code optimized while retaining symbols for
-profiling. Pass `-DCMAKE_BUILD_TYPE=Debug` explicitly when an unoptimized debug
-build is required, or `-DCMAKE_BUILD_TYPE=Release` for deployment artifacts.
+```bash
+# 直接运行
+./build/cscui
 
-## Runtime performance model
+# 深色 + 中文 + 看板页 + 检查器
+./build/cscui --theme dark --language zh --page extended --debug-ui
 
-- Qt Quick owns the GUI thread and uses the platform scene-graph render loop;
-  QML objects must remain on the GUI thread.
-- Recursive music discovery runs on one shared, low-priority worker thread.
-  The bounded pool avoids competing disk walks when multiple media components
-  exist, stale asynchronous results are discarded by generation number, and
-  page destruction cancels cooperatively without waiting on the GUI thread.
-- Large playlist results are applied in bounded per-frame batches. Metadata is
-  prefetched only around the visible rows through a deduplicated, throttled
-  queue, so scrolling does not compete with filesystem or multimedia work.
-- Catalogue pages are incubated asynchronously so navigation and window input
-  remain responsive while delegates and charts are constructed.
-- `Carousel` decodes images near their rendered size, limits the maximum
-  decode dimension, and loads only the current page and its neighbours by
-  default. `cacheImages`, `lazyLoad`, `preloadRadius`, `decodeScale`, and
-  `maxDecodeDimension` remain configurable for application-specific workloads.
-- The UI inspector samples actual frame swaps without forcing the render loop
-  to stay active while the window is idle.
-- Media cover art is decoded asynchronously at bounded dimensions. Full-window
-  blur and masking avoid redundant live sources and unnecessary cached layers.
+# 截图（用于文档 / 冒烟）
+./build/cscui --page core --theme light --language zh --window-size 1280x820 --screenshot preview/shot.png
+```
 
-## Runtime inspector
+### 常用命令行参数
 
-Start the workbench with the inspector open:
+| 参数 | 说明 |
+|------|------|
+| `--page core|light|extended`（或 `0|1|2`） | 启动页 |
+| `--theme light|dark|auto` | 主题 |
+| `--language en|zh|auto` | 语言 |
+| `--debug-ui` | 打开 UI 检查器 |
+| `--window-size WxH` | 窗口尺寸，如 `1280x820` |
+| `--screenshot path` | 就绪后截图并退出 |
 
-~~~bash
-./build/cscui --debug-ui
-~~~
+---
 
-The toolbar inspector toggle can open or close it after launch. The inspector
-reports build mode, active page, viewport dimensions, frame rate, reduced-motion
-and high-contrast state, layout bounds, and a bounded event log. It is intended
-for local verification and does not persist application data.
+## 工程结构
 
-For deterministic visual smoke tests, combine the screenshot and size options:
+```
+.
+├── Main.qml              # 无边框壳层、导航、切页、预加载、滚轮
+├── main.cpp              # 启动参数、主题桥接、截图
+├── components/           # 可复用组件 + 工作台辅助控件（Csc*）
+├── pages/                # 三个演示场景
+│   ├── BaseComponents.qml          # 今日工作流
+│   ├── NoBackgroundComponents.qml  # 日程与资料
+│   └── OtherComponents.qml         # 生活看板
+├── core/                 # 音乐库扫描等 C++ 服务
+├── docs/DESIGN_SYSTEM.md # 设计令牌与交互契约
+├── fonts/                # 图标字体与演示图片
+├── preview/              # 预览截图
+├── scaffold/             # 应用脚手架模板
+└── tools/                # 新建工程脚本
+```
 
-~~~bash
-./build/cscui --page extended --theme dark --debug-ui --window-size 900x620 --screenshot build/cscui-dark.png
-~~~
+---
 
-`--page` accepts `core`, `light`, or `extended` (numeric aliases `0`, `1`, and
-`2` are also accepted). It is useful for deterministic page-level smoke tests
-and does not change the in-app navigation behavior.
+## 组件清单（47）
 
-## Reusing the QML module
+### 基础与表单
 
-A consuming application can import the versioned module:
+`Button` · `Input` · `SearchField` · `Dropdown` · `CheckBox` · `RadioButton` · `SwitchButton` · `Slider` · `MenuButton` · `Tag` · `ProgressBar` · `Divider`
 
-~~~qml
+### 反馈与容器
+
+`Toast` · `AlertDialog` · `LoadingIndicator` · `Accordion` · `Card` · `CardWithTextArea` · `HoverCard` · `BlurCard` · `Drawer` · `EmptyState`
+
+### 数据与导航
+
+`List` · `NavBar` · `DataTable` · `Calendar` · `SimpleDatePicker` · `Carousel` · `Avatar`
+
+### 图表与小组件
+
+`AreaChart` · `BarChart` · `PieChart` · `Clock` · `ClockCard` · `TimeDisplay` · `BatteryCard` · `FitnessProgress` · `YearProgress` · `NextHolidayCountdown` · `HitokotoCard` · `ColorPicker`
+
+### 媒体与窗口
+
+`MusicPlayer` · `Playlist` · `MusicWindow` · `AnimatedWindow` · `Aboutme` · `Theme`
+
+工作台内部还有 `Csc*` 辅助控件（分区标题、滚动条、分段控件、调试面板、身份角标等），不单独作为业务组件导出。
+
+---
+
+## 使用方式
+
+### 模块导入（构建为 QML 模块后）
+
+```qml
 import cscui 1.0
 
-ApplicationWindow {
-    // Use controls exposed by the module.
+Button {
+    theme: appTheme
+    text: "Continue"
 }
-~~~
+```
 
-For a source checkout copied into an application, local component imports remain
-available:
+### 源码旁路导入
 
-~~~qml
+```qml
 import "components" as Components
 
 Components.Button {
-    text: "Continue"
+    theme: theme
+    text: "继续"
 }
-~~~
+```
 
-Bundled non-QML assets use the stable resource prefix `qrc:/cscui/`:
+资源前缀：`qrc:/cscui/`（字体、图片等）。
 
-~~~qml
-FontLoader {
-    source: "qrc:/cscui/fonts/fontawesome-free-6.7.2-desktop/otfs/Font Awesome 6 Free-Solid-900.otf"
-}
-~~~
+主题通过 `Theme` 对象注入；组件使用 `theme.localized("English", "中文")` 做文案。
 
-## Scaffold a project
+---
 
-The canonical generators are safe to call from scripts and CI. They reject
-invalid project names, restrict template selection to `scaffold/templates`,
-and refuse to overwrite an existing directory.
+## 设计与性能要点
 
-PowerShell:
+详见 [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md)。
 
-~~~powershell
+- 语义色与间距/圆角/字号令牌统一在 `Theme.qml`
+- 切页只动画入场页，避免双页同时绘制
+- 列表：`reuseItems` + `cacheBuffer`（如 `DataTable` / `List`）
+- 图标字体：壳层加载一次，经 `Theme.iconFamily()` / `iconSource()` 共享
+- 音乐扫描：单线程低优先级池、代际号取消、有界元数据缓存
+
+---
+
+## 脚手架
+
+```powershell
 .\tools\New-CscuiProject.ps1 -Name SampleApp -Destination . -Template basic -NonInteractive
-~~~
+```
 
-Bash:
+模板：`basic` / `mobile` / `productivity`（见 `scaffold/templates/`）。
 
-~~~bash
-bash ./tools/New-CscuiProject.sh --name SampleApp --destination . --template basic --non-interactive
-~~~
+---
 
-Windows command prompt:
+## 许可证
 
-~~~bat
-tools\New-CscuiProject.bat -Name SampleApp -Destination . -Template basic -NonInteractive
-~~~
-
-Each generated project contains a CMake build, a `src.qrc` manifest, the
-selected pages, and a copy of the reusable components and fonts. The previous
-generator filenames remain as deprecation wrappers so existing automation can
-transition without silently changing behavior.
-
-## Component catalogue
-
-The gallery includes controls and patterns such as:
-
-- Buttons, icon buttons, inputs, switches, sliders, check boxes, radio buttons,
-  menus, dropdowns, drawers, dialogs, toasts, and loaders.
-- Cards, avatars, lists, tables, calendars, date pickers, carousels, clocks,
-  progress indicators, and charts.
-- Navigation bars, theme controls, media widgets, and the cscui debug panel.
-
-Component filenames with the historical `E` prefix are retained as a source
-compatibility surface. New components should use the `Csc` prefix and the
-tokens documented in `docs/DESIGN_SYSTEM.md`.
-
-## Engineering conventions
-
-- Keep QML files in `components/` or `pages/`; CMake discovers only those
-  two directories with narrow, configure-aware globs.
-- Expose configurable behavior as typed properties with safe defaults.
-- Use semantic theme values instead of hard-coded colors or shadows.
-- Keep controls keyboard-operable and provide accessible names for icon-only
-  actions.
-- Respect reduced motion, large text, and high-contrast settings.
-- Add a focused CTest or static-analysis check when changing shared behavior.
-- Keep comments short and explain intent or a non-obvious constraint.
-
-## Migration from the former product name
-
-The executable, CMake project, QML URI, resource prefix, scaffold text, and
-package identifiers are now branded `cscui`. Update consumers as follows:
-
-| Before | cscui |
-| --- | --- |
-| `import EvolveUI` | `import cscui 1.0` |
-| `engine.loadFromModule("EvolveUI", "Main")` | `engine.loadFromModule("cscui", "Main")` |
-| `qrc:/new/prefix1/` | `qrc:/cscui/` |
-| `New-EvolveUIProject.*` | `New-CscuiProject.*` |
-| `com.sudoevolve.android` | `com.cscui.android` |
-
-The compatibility generator wrappers emit a deprecation warning and delegate to
-the canonical implementation. They are kept only for transition support.
-
-## Links
-
-- [Design system](docs/DESIGN_SYSTEM.md)
-- [Qt Quick documentation](https://doc.qt.io/qt-6/qtquick-index.html)
-- [Qt QML modules](https://doc.qt.io/qt-6/qtqml-modules-cppplugins.html)
-
-Source, issue tracking, and release artifacts are maintained by the owning
-organization. Keep those endpoints in deployment-specific documentation
-rather than hard-coding an unverified public URL here.
-
-## License
-
-cscui is distributed under the MIT License. See [LICENSE](LICENSE).
+见 [LICENSE](LICENSE)。
