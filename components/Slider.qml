@@ -331,6 +331,7 @@ FocusScope {
     // Workbench identity chip (hover → name). Reparented to root so default
     // property aliases (content slots) do not swallow it.
     CscIdentityLayer {
+        active: false
         parent: root
         anchors.fill: parent
         theme: root.theme

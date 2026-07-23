@@ -3,7 +3,8 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 
-// Hover name chip. Lives on Overlay.overlay so it never covers host chrome.
+// Hover name chip on Overlay. Never covers host content; refuses invalid
+// coordinates so it cannot stick to the window top-left.
 Item {
     id: root
 
@@ -18,50 +19,115 @@ Item {
             return root.nameEn + " · " + root.nameZh
         return root.nameEn
     }
-    readonly property bool canShow: root.active && root.nameEn.length && root.width > 28 && root.height > 28
+    readonly property bool canShow: root.active
+                                   && root.visible
+                                   && root.nameEn.length > 0
+                                   && root.width >= 48
+                                   && root.height >= 32
 
     HoverHandler {
         id: hover
         enabled: root.canShow
         acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
-        onHoveredChanged: hovered ? root.show() : chip.close()
+        onHoveredChanged: {
+            if (hovered)
+                showTimer.restart()
+            else {
+                showTimer.stop()
+                chip.close()
+            }
+        }
     }
 
-    function show() {
-        if (!root.canShow || !Overlay.overlay)
-            return
-        chip.open()
-        root.place()
-    }
-
-    function place() {
-        if (!chip.opened || !Overlay.overlay)
-            return
-        const gap = root.theme ? root.theme.spacingSmall : 6
-        const w = chip.implicitWidth
-        const h = chip.implicitHeight
-        // Prefer outside top-right; flip below if near window top.
-        let lx = root.width - w
-        let ly = -h - gap
-        const top = root.mapToItem(Overlay.overlay, 0, 0).y
-        if (top + ly < gap)
-            ly = root.height + gap
-        const p = root.mapToItem(Overlay.overlay, lx, ly)
-        chip.x = Math.max(gap, Math.min(p.x, Overlay.overlay.width - w - gap))
-        chip.y = Math.max(gap, Math.min(p.y, Overlay.overlay.height - h - gap))
-    }
-
-    // Track host geometry while open (scroll / resize) without per-frame work when idle.
+    // Small delay avoids flicker when the pointer crosses dense control rows.
     Timer {
+        id: showTimer
+        interval: 280
+        repeat: false
+        onTriggered: root.show()
+    }
+
+    Timer {
+        id: followTimer
         interval: 32
         repeat: true
         running: hover.hovered && chip.opened
         onTriggered: root.place()
     }
 
+    function show() {
+        if (!hover.hovered || !root.canShow)
+            return
+        const overlay = Overlay.overlay
+        if (!overlay || overlay.width < 32 || overlay.height < 32)
+            return
+        chip.open()
+        // Place after Popup has a real size in the overlay.
+        Qt.callLater(root.place)
+        Qt.callLater(root.place)
+    }
+
+    function place() {
+        if (!chip.opened)
+            return
+        const overlay = Overlay.overlay
+        if (!overlay || overlay.width < 32 || overlay.height < 32)
+            return
+
+        // Host must still be on-screen with a real size.
+        if (!root.visible || root.width < 48 || root.height < 32) {
+            chip.close()
+            return
+        }
+
+        const gap = root.theme ? root.theme.spacingSmall : 6
+        const w = Math.max(chip.implicitWidth, 56)
+        const h = Math.max(chip.implicitHeight, 24)
+
+        // Map host top-right into overlay space.
+        const topLeft = root.mapToItem(overlay, 0, 0)
+        if (!isFinite(topLeft.x) || !isFinite(topLeft.y)) {
+            chip.close()
+            return
+        }
+
+        // Prefer outside the host, just above its top-right.
+        let x = topLeft.x + root.width - w
+        let y = topLeft.y - h - gap
+        if (y < gap)
+            y = topLeft.y + root.height + gap
+
+        // Reject degenerate placements (would look like "stuck" at 0,0).
+        if (x < -w || y < -h || x > overlay.width || y > overlay.height) {
+            chip.close()
+            return
+        }
+
+        x = Math.max(gap, Math.min(x, overlay.width - w - gap))
+        y = Math.max(gap, Math.min(y, overlay.height - h - gap))
+
+        // If clamping dragged the chip far from the host, hide instead of lying.
+        const hostCx = topLeft.x + root.width * 0.5
+        const hostCy = topLeft.y + root.height * 0.5
+        const chipCx = x + w * 0.5
+        const chipCy = y + h * 0.5
+        const dx = chipCx - hostCx
+        const dy = chipCy - hostCy
+        if ((dx * dx + dy * dy) > (420 * 420)) {
+            chip.close()
+            return
+        }
+
+        chip.x = x
+        chip.y = y
+    }
+
     Connections {
         target: root
-        function onVisibleChanged() { if (!root.visible) chip.close() }
+        function onVisibleChanged() {
+            if (!root.visible)
+                chip.close()
+        }
     }
 
     Popup {
@@ -77,14 +143,18 @@ Item {
 
         enter: Transition {
             NumberAnimation {
-                property: "opacity"; from: 0; to: 1
+                property: "opacity"
+                from: 0
+                to: 1
                 duration: root.theme ? root.theme.durationFast : 140
                 easing.type: Easing.OutCubic
             }
         }
         exit: Transition {
             NumberAnimation {
-                property: "opacity"; from: 1; to: 0
+                property: "opacity"
+                from: 1
+                to: 0
                 duration: root.theme ? root.theme.durationFast : 100
                 easing.type: Easing.InCubic
             }
@@ -97,6 +167,7 @@ Item {
             border.color: root.theme ? root.theme.focusColor : "#0066CC"
             opacity: 0.97
         }
+
         contentItem: Text {
             id: label
             anchors.centerIn: parent
@@ -111,7 +182,5 @@ Item {
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
         }
-
-        onOpened: root.place()
     }
 }

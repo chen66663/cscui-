@@ -62,6 +62,7 @@ Item {
     }
 
     CscIdentityLayer {
+        active: false
         parent: root
         anchors.fill: parent
         theme: root.theme
