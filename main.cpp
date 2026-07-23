@@ -248,6 +248,8 @@ int main(int argc, char *argv[])
     // properties, this path is visible to qmllint and is type-checked at load.
     engine.setInitialProperties({
             {QStringLiteral("debugUi"), debugUiEnabled},
+            {QStringLiteral("autoAnimatedDemo"),
+             qEnvironmentVariableIsSet("CSCUI_AUTO_ANIMATED")},
             {QStringLiteral("buildMode"), buildMode()},
             {QStringLiteral("themeMode"), themeMode},
             {QStringLiteral("languageMode"), languageMode},

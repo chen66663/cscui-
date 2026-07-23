@@ -21,6 +21,7 @@ ApplicationWindow {
     // These properties are populated by QQmlApplicationEngine before loading;
     // keeping them on the root avoids hidden context-property dependencies.
     property bool debugUi: false
+    property bool autoAnimatedDemo: false
     property string buildMode: "Unknown"
     property string themeMode: "auto"
     property string languageMode: "auto"
@@ -1298,6 +1299,23 @@ ApplicationWindow {
                     wrapMode: Text.WordWrap
                 }
             }
+        }
+    }
+
+
+    Timer {
+        id: autoAnimatedDemoTimer
+        interval: 900
+        repeat: false
+        running: root.autoAnimatedDemo && root.currentPageReady
+        onTriggered: {
+            root.openAnimatedDemo(titleBar, {
+                duration: 320,
+                contentDelayFactor: 0.28,
+                contentDurationFactor: 0.72,
+                closeDurationFactor: 0.68,
+                contentOffset: 10
+            })
         }
     }
 
