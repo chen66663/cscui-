@@ -46,14 +46,18 @@
 
 ### 动画窗口（共享元素过渡）
 
-调节时长、内容延迟 / 淡入、关闭时长与位移，从触发按钮 morph 到全屏动画窗口（只改 transform / opacity）。
+左侧触发按钮（含不同圆角方块）+ 右侧可调参数（时长 / 延迟 / 淡入 / 关闭 / 位移）。点击后从按钮 morph 到全屏窗口，动画只改 transform、颜色与不透明度。
+
+**参数面板**
 
 <p align="center">
-  <img src="preview/readme-animated-window.gif" width="86%" alt="动画窗口演示" />
+  <img src="preview/readme-animated-panel.png" width="88%" alt="动画窗口参数面板" />
 </p>
 
+**开窗过渡**
+
 <p align="center">
-  <img src="preview/readme-animated-window.png" width="70%" alt="动画窗口静态帧" />
+  <img src="preview/readme-animated-window.gif" width="88%" alt="动画窗口开窗 GIF" />
 </p>
 
 ### 检查器 · 窄屏

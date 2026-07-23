@@ -1303,19 +1303,31 @@ ApplicationWindow {
     }
 
 
+    function scrollToAnimatedWindowSection() {
+        const maxY = Math.max(0, contentFlickable.contentHeight - contentFlickable.height)
+        // Section sits below charts/widgets; ~0.70 keeps triggers + params on screen.
+        contentFlickable.contentY = Math.min(maxY, Math.max(0, maxY * 0.70))
+    }
+
     Timer {
         id: autoAnimatedDemoTimer
-        interval: 900
+        interval: 600
         repeat: false
         running: root.autoAnimatedDemo && root.currentPageReady
         onTriggered: {
-            root.openAnimatedDemo(titleBar, {
-                duration: 320,
-                contentDelayFactor: 0.28,
-                contentDurationFactor: 0.72,
-                closeDurationFactor: 0.68,
-                contentOffset: 10
-            })
+            root.scrollToAnimatedWindowSection()
+            autoAnimatedOpenTimer.start()
+        }
+    }
+
+    Timer {
+        id: autoAnimatedOpenTimer
+        interval: 700
+        repeat: false
+        onTriggered: {
+            const loader = root.pageLoaderAt(root.currentIndex)
+            if (loader && loader.item && loader.item.demoOpenAnimatedWindow)
+                loader.item.demoOpenAnimatedWindow()
         }
     }
 

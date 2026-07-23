@@ -100,6 +100,13 @@ ColumnLayout {
                  + (variantLabel ? " · " + variantLabel : ""));
     }
 
+    // Used by the shell auto-demo / README capture: morph from the real launcher.
+    function demoOpenAnimatedWindow() {
+        root.launchAnimatedWindow(
+                    animatedWindowLauncher,
+                    root.theme.localized("Standard", "标准按钮"));
+    }
+
     function resetAnimationParameters() {
         root.animationDuration = 320;
         root.contentDelayPercent = 28;
